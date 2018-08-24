@@ -1,15 +1,19 @@
-package com.rabbitmq.exchange;
+package com.rabbitmq.api.message;
 
+import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @Auther wangwei
- * @Date 2018/8/22 下午6:33
+ * @Date 2018/8/22 下午4:52
  */
-public class ProducerTopicExchange {
-    public static void main(String[] args) throws Exception{
+public class Producer {
+    public static void main(String[] args) throws Exception {
         /**
          * 创建一个ConnectionFactory连接工厂并配置相关属性
          */
@@ -28,23 +32,27 @@ public class ProducerTopicExchange {
          */
         Channel channel = connection.createChannel();
 
-        //声明
-        String exchangeName = "test_topic_exchange";
-        String routingKey1 = "user.save";
-        String routingKey2 = "user.update";
-        String routingKey3 = "user.delete.abc";
-        String msg = "Hello World RabbitMQ Topic Exchange Message...";
+        Map<String, Object> headers = new HashMap<>();
+        headers.put("my1", 111);
+        headers.put("my2", 222);
+
+        AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
+                .deliveryMode(2)
+                .contentEncoding("UTF-8")
+                .expiration("10000")
+                .headers(headers)
+                .build();
 
         /**
          * 发送消息
          */
-        channel.basicPublish(exchangeName, routingKey1, null, msg.getBytes() );
-        channel.basicPublish(exchangeName, routingKey2, null, msg.getBytes() );
-        channel.basicPublish(exchangeName, routingKey3, null, msg.getBytes() );
+        for (int i = 0; i < 5; i++) {
+            String msg = "Hello rabbitMQ";
+
+            channel.basicPublish("", "test001", properties, msg.getBytes() );
+        }
 
         channel.close();
         connection.close();
-
-
     }
 }

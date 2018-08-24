@@ -1,4 +1,4 @@
-package com.rabbitmq;
+package com.rabbitmq.api.exchange;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -7,10 +7,10 @@ import com.rabbitmq.client.QueueingConsumer;
 
 /**
  * @Auther wangwei
- * @Date 2018/8/22 下午4:52
+ * @Date 2018/8/22 下午6:38
  */
-public class Consumer {
-    public static void main(String[] args)throws Exception {
+public class ConsumerFanoutExchange {
+    public static void main(String[] args) throws Exception{
         /**
          * 创建一个ConnectionFactory连接工厂并配置相关属性
          */
@@ -18,6 +18,10 @@ public class Consumer {
         factory.setHost("39.107.234.188");
         factory.setPort(5672);
         factory.setVirtualHost("/");
+
+        //自动重连
+        factory.setAutomaticRecoveryEnabled(true);
+        factory.setNetworkRecoveryInterval(3000);
 
         /**
          * 通过连接工厂创建连接
@@ -30,19 +34,22 @@ public class Consumer {
         Channel channel = connection.createChannel();
 
         /**
-         * 声明一个队列
+         * 声明
          */
-        String queueName = "test001";
-        channel.queueDeclare(queueName, true, false, false, null);
+        String exchangeName = "test_fanout_exchage";
+        String exchangeType = "fanout";
+        String queueName = "test_fanout_queue";
+        String routingKey = "";
+
+        channel.exchangeDeclare(exchangeName, exchangeType, true, false, false, null);
+        channel.queueDeclare(queueName, false, false, false, null);
+        channel.queueBind(queueName, exchangeName, routingKey);
 
         /**
          * 创建消费者
          */
         QueueingConsumer queueingConsumer = new QueueingConsumer(channel);
-
-        /**
-         * 设置channel
-         */
+        //参数：队列名称 是否自动ACK Consumer
         channel.basicConsume(queueName, true, queueingConsumer);
 
         /**
@@ -51,7 +58,10 @@ public class Consumer {
         while (true){
             QueueingConsumer.Delivery delivery = queueingConsumer.nextDelivery();
             String msg = new String(delivery.getBody());
-            System.out.println("消费端:"+msg);
+            System.out.println("收到消息:"+msg);
         }
+
+
+
     }
 }
